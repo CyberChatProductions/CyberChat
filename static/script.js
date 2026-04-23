@@ -3,46 +3,44 @@ let username;
 let currentChat = null;
 
 let users = JSON.parse(localStorage.getItem("users") || "[]");
-let chats = JSON.parse(localStorage.getItem("chats") || "{}");
 
-// 🔑 ключ диалога (один и тот же для двух пользователей)
-function getChatKey(user1, user2) {
-    return [user1, user2].sort().join("_");
-}
-
-// 🔌 подключение
+// 🔌 подключение (с поддержкой Render / HTTPS)
 function connect() {
-    username = prompt("Enter your name:");
+    username = localStorage.getItem("username");
 
-    ws = new WebSocket(`ws://${location.host}/ws/${username}`);
+    if (!username) {
+        username = prompt("Enter your name:");
+        if (!username) return;
+        localStorage.setItem("username", username);
+    }
+
+    // ✅ ВАЖНО: ws / wss
+    let protocol = location.protocol === "https:" ? "wss" : "ws";
+    ws = new WebSocket(`${protocol}://${location.host}/ws/${username}`);
+
+    ws.onopen = () => {
+        console.log("Connected to server");
+    };
 
     ws.onmessage = (event) => {
         let data = JSON.parse(event.data);
 
-        if (data.type === "message") {
-
-            let key = getChatKey(data.from, data.to);
-
-            if (!chats[key]) chats[key] = [];
-
-            // ❌ защита от дублей
-            let last = chats[key][chats[key].length - 1];
-            if (last && last.text === data.text && last.from === data.from) return;
-
-            chats[key].push(data);
-            saveChats();
-
-            // показываем только текущий чат
-            if (currentChat) {
-                let currentKey = getChatKey(username, currentChat);
-                if (key === currentKey) {
-                    addMessage(data);
-                }
-            }
+        // показываем только текущий чат
+        if (currentChat === data.from || currentChat === data.to) {
+            addMessage(data);
         }
     };
 
-    // ✅ Enter
+    ws.onerror = (err) => {
+        console.error("WebSocket error:", err);
+    };
+
+    ws.onclose = () => {
+        console.log("Disconnected. Reconnecting...");
+        setTimeout(connect, 2000); // авто-переподключение
+    };
+
+    // ✅ Enter работает
     document.getElementById("msg").addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
             e.preventDefault();
@@ -50,20 +48,22 @@ function connect() {
         }
     });
 
-    updateUsers();
+    renderUsers();
 }
 
-// 💾 сохранение
-function saveUsers() {
+// ➕ добавить пользователя
+function addUser() {
+    let name = prompt("User name:");
+
+    if (!name || name === username || users.includes(name)) return;
+
+    users.push(name);
     localStorage.setItem("users", JSON.stringify(users));
+    renderUsers();
 }
 
-function saveChats() {
-    localStorage.setItem("chats", JSON.stringify(chats));
-}
-
-// 👥 список пользователей
-function updateUsers() {
+// 👥 отрисовка пользователей
+function renderUsers() {
     let list = document.getElementById("userList");
     list.innerHTML = "";
 
@@ -71,81 +71,21 @@ function updateUsers() {
         if (u === username) return;
 
         let div = document.createElement("div");
-        div.style.display = "flex";
-        div.style.justifyContent = "space-between";
-        div.style.padding = "8px";
-        div.style.marginBottom = "5px";
+        div.innerText = u;
+        div.style.cursor = "pointer";
+        div.style.padding = "6px";
         div.style.borderRadius = "6px";
+        div.style.marginBottom = "5px";
         div.style.background = u === currentChat ? "#0078ff" : "#333";
         div.style.color = "white";
 
-        let name = document.createElement("span");
-        name.innerText = u;
-        name.style.cursor = "pointer";
-
-        name.onclick = () => {
+        div.onclick = () => {
             currentChat = u;
-            loadChat(u);
-            updateUsers();
+            document.getElementById("chat").innerHTML = "";
+            renderUsers();
         };
 
-        let del = document.createElement("button");
-        del.innerText = "✖";
-
-        del.onclick = (e) => {
-            e.stopPropagation();
-
-            users = users.filter(x => x !== u);
-
-            let key = getChatKey(username, u);
-            delete chats[key];
-
-            saveUsers();
-            saveChats();
-
-            if (currentChat === u) {
-                currentChat = null;
-                document.getElementById("chat").innerHTML = "";
-            }
-
-            updateUsers();
-        };
-
-        div.appendChild(name);
-        div.appendChild(del);
         list.appendChild(div);
-    });
-}
-
-// ➕ добавить пользователя
-function addUser() {
-    let name = prompt("Enter user name:");
-
-    if (!name || name === username || users.includes(name)) return;
-
-    users.push(name);
-    saveUsers();
-    updateUsers();
-}
-
-// 📥 загрузка чата
-function loadChat(user) {
-    let chat = document.getElementById("chat");
-    chat.innerHTML = "";
-
-    let title = document.createElement("div");
-    title.innerText = "Chat with " + user;
-    title.style.color = "gray";
-    title.style.marginBottom = "10px";
-
-    chat.appendChild(title);
-
-    let key = getChatKey(username, user);
-
-    if (!chats[key]) return;
-
-    chats[key].forEach(msg => {
-        addMessage(msg);
     });
 }
 
@@ -160,16 +100,20 @@ function send() {
 
     if (!text.trim()) return;
 
+    if (ws.readyState !== WebSocket.OPEN) {
+        alert("Нет соединения с сервером 😢");
+        return;
+    }
+
     ws.send(JSON.stringify({
-        type: "message",
         to: currentChat,
         text: text
-    }))
+    }));
 
-document.getElementById("msg").value = "";
+    document.getElementById("msg").value = "";
 }
 
-// 🧾 отображение
+// 🧾 отображение сообщений
 function addMessage(data) {
     let div = document.createElement("div");
     div.classList.add("msg");
@@ -182,8 +126,9 @@ function addMessage(data) {
         div.innerText = data.from + ": " + data.text;
     }
 
-    document.getElementById("chat").appendChild(div);
-    document.getElementById("chat").scrollTop = 999999;
+    let chat = document.getElementById("chat");
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
 }
 
 // 🚀 старт
