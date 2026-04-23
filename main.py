@@ -1,17 +1,20 @@
+import os
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-import os
 
 app = FastAPI()
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# 🔥 абсолютный путь (ключ к фиксу)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 
 clients = {}
 
 @app.get("/")
 def home():
-    return FileResponse(os.path.join("templates", "index.html"))
+    return FileResponse(os.path.join(BASE_DIR, "templates", "index.html"))
 
 @app.websocket("/ws/{username}")
 async def websocket_endpoint(websocket: WebSocket, username: str):
