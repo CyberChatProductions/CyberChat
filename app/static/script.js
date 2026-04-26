@@ -1,5 +1,4 @@
-const wsProtocol = location.protocol === "https:" ? "wss" : "ws";
-const ws = new WebSocket(`${wsProtocol}://${location.host}/ws`);
+const ws = new WebSocket(`wss://${location.host}/ws`);
 
 ws.onmessage = (event) => {
     const chat = document.getElementById("chat");
