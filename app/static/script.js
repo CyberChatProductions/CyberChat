@@ -32,10 +32,11 @@ async function loadDialogs() {
     const box = document.getElementById("users");
     box.innerHTML = "";
 
-    data.forEach(u => addUser(u));
+    data.forEach(u => renderUser(u));
 }
 
-function addUser(name) {
+// 📌 РЕНДЕР пользователя (НОРМАЛЬНАЯ ФУНКЦИЯ)
+function renderUser(name) {
     const box = document.getElementById("users");
 
     const div = document.createElement("div");
@@ -51,10 +52,12 @@ function addUser(name) {
     box.appendChild(div);
 }
 
+// 📌 ДОБАВЛЕНИЕ ЧАТА (ИСПРАВЛЕНО)
 function addUser() {
-    const name = prompt("user:");
+    const name = prompt("Enter username:");
     if (!name) return;
-    addUser(name);
+
+    renderUser(name);
 }
 
 function send() {
