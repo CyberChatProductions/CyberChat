@@ -6,14 +6,12 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 
 from app.db import Base, engine, SessionLocal
-from app.models import Message
+from app.models import User, Message
 
 app = FastAPI()
 
-# 📌 база
 Base.metadata.create_all(bind=engine)
 
-# 📌 пути (чтобы не ловить Render 404)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 
@@ -23,50 +21,47 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 def home():
     return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
-# =========================
-# 💬 ЧАТ ЛОГИКА
-# =========================
+# ======================
+# USERS
+# ======================
+
+def get_or_create_user(db: Session, username: str):
+    user = db.query(User).filter(User.username == username).first()
+    if not user:
+        user = User(username=username)
+        db.add(user)
+        db.commit()
+    return user
+
+@app.get("/users")
+def users():
+    db = SessionLocal()
+    data = db.query(User).all()
+    db.close()
+    return [u.username for u in data]
+
+# ======================
+# CHAT LOGIC
+# ======================
 
 connections = {}
 
-# 📌 список диалогов
-@app.get("/dialogs/{username}")
-def dialogs(username: str):
-    db: Session = SessionLocal()
-
-    msgs = db.query(Message).filter(
-        or_(
-            Message.sender == username,
-            Message.receiver == username
-        )
-    ).all()
-
-    users = set()
-
-    for m in msgs:
-        if m.sender != username:
-            users.add(m.sender)
-        if m.receiver != username:
-            users.add(m.receiver)
-
-    db.close()
-    return list(users)
-
-# 📌 websocket
 @app.websocket("/ws")
 async def ws(websocket: WebSocket):
     await websocket.accept()
 
     username = await websocket.receive_text()
-    connections[username] = websocket
 
-    db: Session = SessionLocal()
+    db = SessionLocal()
+    get_or_create_user(db, username)
+
+    connections[username] = websocket
 
     try:
         while True:
             data = await websocket.receive_text()
 
-            # 📌 история
+            # 📌 история чата
             if data.startswith("history|"):
                 other = data.split("|")[1]
 
@@ -80,24 +75,24 @@ async def ws(websocket: WebSocket):
                 for m in msgs:
                     await websocket.send_text(f"{m.sender}|{m.content}")
 
-            # 📌 отправка + сохранение
+            # 📌 сообщение
             elif "|" in data:
                 to, msg = data.split("|", 1)
 
-                new_msg = Message(
+                get_or_create_user(db, to)
+
+                message = Message(
                     sender=username,
                     receiver=to,
                     content=msg
                 )
 
-                db.add(new_msg)
+                db.add(message)
                 db.commit()
 
-                # отправка получателю
                 if to in connections:
                     await connections[to].send_text(f"{username}|{msg}")
 
-                # себе
                 await websocket.send_text(f"{username}|{msg}")
 
     except WebSocketDisconnect:
