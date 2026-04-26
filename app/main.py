@@ -1,5 +1,6 @@
 import os
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
@@ -9,20 +10,28 @@ from app.models import Message
 
 app = FastAPI()
 
+# 📌 база
 Base.metadata.create_all(bind=engine)
 
+# 📌 пути (чтобы не ловить Render 404)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
+
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 @app.get("/")
 def home():
     return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
+# =========================
+# 💬 ЧАТ ЛОГИКА
+# =========================
+
 connections = {}
 
-# 📌 список диалогов (восстановление чатов)
+# 📌 список диалогов
 @app.get("/dialogs/{username}")
-def get_dialogs(username: str):
+def dialogs(username: str):
     db: Session = SessionLocal()
 
     msgs = db.query(Message).filter(
@@ -43,7 +52,7 @@ def get_dialogs(username: str):
     db.close()
     return list(users)
 
-# 📡 websocket
+# 📌 websocket
 @app.websocket("/ws")
 async def ws(websocket: WebSocket):
     await websocket.accept()
@@ -57,7 +66,7 @@ async def ws(websocket: WebSocket):
         while True:
             data = await websocket.receive_text()
 
-            # 📌 загрузка истории
+            # 📌 история
             if data.startswith("history|"):
                 other = data.split("|")[1]
 
@@ -71,11 +80,10 @@ async def ws(websocket: WebSocket):
                 for m in msgs:
                     await websocket.send_text(f"{m.sender}|{m.content}")
 
-            # 📌 отправка сообщения
+            # 📌 отправка + сохранение
             elif "|" in data:
                 to, msg = data.split("|", 1)
 
-                # 💾 СОХРАНЕНИЕ В БД
                 new_msg = Message(
                     sender=username,
                     receiver=to,
@@ -85,11 +93,11 @@ async def ws(websocket: WebSocket):
                 db.add(new_msg)
                 db.commit()
 
-                # 📤 получателю
+                # отправка получателю
                 if to in connections:
                     await connections[to].send_text(f"{username}|{msg}")
 
-                # 📤 себе
+                # себе
                 await websocket.send_text(f"{username}|{msg}")
 
     except WebSocketDisconnect:
