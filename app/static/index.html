@@ -2,10 +2,31 @@
 <html>
 <head>
     <title>Messenger</title>
+
     <style>
+        :root {
+            --bg: #ffffff;
+            --text: #000000;
+            --sidebar: #f5f5f5;
+            --chat-bg: #ffffff;
+            --msg-me: #d1e7ff;
+            --msg-other: #eeeeee;
+        }
+
+        body.dark {
+            --bg: #1e1e1e;
+            --text: #ffffff;
+            --sidebar: #2a2a2a;
+            --chat-bg: #1e1e1e;
+            --msg-me: #3a6ea5;
+            --msg-other: #3a3a3a;
+        }
+
         body {
             margin: 0;
             font-family: Arial;
+            background: var(--bg);
+            color: var(--text);
             display: flex;
             height: 100vh;
         }
@@ -21,15 +42,36 @@
         }
 
         #sidebar {
-            width: 250px;
-            border-right: 1px solid #ddd;
+            width: 260px;
+            background: var(--sidebar);
+            border-right: 1px solid #ccc;
             padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #users {
+            margin-top: 10px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .user {
+            padding: 8px;
+            cursor: pointer;
+            border-radius: 6px;
+            margin-bottom: 4px;
+        }
+
+        .user:hover {
+            background: rgba(0,0,0,0.1);
         }
 
         #chat {
             flex: 1;
             display: flex;
             flex-direction: column;
+            background: var(--chat-bg);
         }
 
         #messages {
@@ -38,51 +80,84 @@
             overflow-y: auto;
         }
 
+        .msg {
+            margin: 6px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            max-width: 60%;
+            word-wrap: break-word;
+        }
+
+        .me {
+            background: var(--msg-me);
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .other {
+            background: var(--msg-other);
+            margin-right: auto;
+            text-align: left;
+        }
+
         #input {
             display: flex;
-            border-top: 1px solid #ddd;
+            border-top: 1px solid #ccc;
         }
 
         input {
             flex: 1;
             padding: 10px;
             border: none;
+            outline: none;
+            background: transparent;
+            color: var(--text);
         }
 
         button {
             padding: 10px;
             cursor: pointer;
+            border: none;
+            background: #4CAF50;
+            color: white;
         }
 
-        .user {
-            padding: 8px;
+        #topbar {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px;
+        }
+
+        .toggle {
             cursor: pointer;
-            border-radius: 5px;
-        }
-
-        .user:hover {
-            background: #eee;
-        }
-
-        .active {
-            background: #ddd;
         }
     </style>
 </head>
+
 <body>
 
+<!-- LOGIN -->
 <div id="login">
     <h2>Enter your name</h2>
     <input id="nameInput" placeholder="Your name">
+    <br><br>
     <button onclick="login()">Enter</button>
 </div>
 
+<!-- APP -->
 <div id="app">
+
+    <!-- SIDEBAR -->
     <div id="sidebar">
-        <button onclick="addUser()">+ Add user</button>
+        <div id="topbar">
+            <button onclick="addUser()">+</button>
+            <span class="toggle" onclick="toggleTheme()">🌙</span>
+        </div>
+
         <div id="users"></div>
     </div>
 
+    <!-- CHAT -->
     <div id="chat">
         <div id="messages"></div>
 
@@ -91,8 +166,27 @@
             <button onclick="send()">Send</button>
         </div>
     </div>
+
 </div>
 
 <script src="/static/script.js"></script>
+
+<script>
+    // 🔥 тема сохраняется
+    if (localStorage.getItem("theme") === "dark") {
+        document.body.classList.add("dark");
+    }
+
+    function toggleTheme() {
+        document.body.classList.toggle("dark");
+
+        if (document.body.classList.contains("dark")) {
+            localStorage.setItem("theme", "dark");
+        } else {
+            localStorage.setItem("theme", "light");
+        }
+    }
+</script>
+
 </body>
 </html>
