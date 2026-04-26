@@ -1,6 +1,5 @@
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
-from fastapi.templating import Jinja2Templates
-from fastapi.staticfiles import StaticFiles
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.db import engine, Base, SessionLocal
@@ -8,21 +7,14 @@ from app.models import Message
 
 app = FastAPI()
 
-# 📁 шаблоны и статика (СТАНДАРТНО)
-templates = Jinja2Templates(directory="app/templates")
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+# создаём таблицы
+Base.metadata.create_all(bind=engine)
 
-# 🧱 база
-@app.on_event("startup")
-def startup():
-    Base.metadata.create_all(bind=engine)
-
-# 🌐 главная
+# отдаём HTML
 @app.get("/")
-def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+def home():
+    return FileResponse("app/static/index.html")
 
-# 🔌 websocket
 connections = []
 
 @app.websocket("/ws")
