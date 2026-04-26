@@ -4,6 +4,9 @@ let ws;
 let username;
 let currentUser = null;
 
+const usersBox = document.getElementById("users");
+const messagesBox = document.getElementById("messages");
+
 function login() {
     username = document.getElementById("nameInput").value.trim();
     if (!username) return;
@@ -25,41 +28,51 @@ function login() {
     document.getElementById("app").style.display = "flex";
 }
 
+// 📌 загрузка диалогов
 async function loadDialogs() {
     const res = await fetch(`/dialogs/${username}`);
     const data = await res.json();
 
-    const box = document.getElementById("users");
-    box.innerHTML = "";
+    usersBox.innerHTML = "";
 
-    data.forEach(u => renderUser(u));
+    data.forEach(u => createUser(u));
 }
 
-// 📌 РЕНДЕР пользователя (НОРМАЛЬНАЯ ФУНКЦИЯ)
-function renderUser(name) {
-    const box = document.getElementById("users");
-
+// 📌 создание пользователя (ВАЖНО: dataset)
+function createUser(name) {
     const div = document.createElement("div");
     div.className = "user";
     div.innerText = name;
 
-    div.onclick = () => {
-        currentUser = name;
-        document.getElementById("messages").innerHTML = "";
-        ws.send("history|" + name);
-    };
+    // 🔥 КЛЮЧЕВОЙ ФИКС — сохраняем имя в DOM
+    div.dataset.user = name;
 
-    box.appendChild(div);
+    usersBox.appendChild(div);
 }
 
-// 📌 ДОБАВЛЕНИЕ ЧАТА (ИСПРАВЛЕНО)
+// 📌 добавление нового пользователя
 function addUser() {
     const name = prompt("Enter username:");
     if (!name) return;
 
-    renderUser(name);
+    createUser(name);
 }
 
+// 📌 ОДИН ОБЩИЙ КЛИК (event delegation)
+usersBox.addEventListener("click", (e) => {
+    const el = e.target.closest(".user");
+    if (!el) return;
+
+    const name = el.dataset.user;
+    if (!name) return;
+
+    currentUser = name;
+    messagesBox.innerHTML = "";
+
+    ws.send("history|" + name);
+});
+
+// 📌 отправка сообщения
 function send() {
     const msg = document.getElementById("msgInput").value;
     if (!currentUser || !msg) return;
@@ -68,14 +81,13 @@ function send() {
     document.getElementById("msgInput").value = "";
 }
 
+// 📌 вывод сообщений
 function addMessage(sender, msg) {
-    const box = document.getElementById("messages");
-
     const div = document.createElement("div");
     div.className = "msg " + (sender === username ? "me" : "other");
 
     div.innerText = sender === username ? msg : sender + ": " + msg;
 
-    box.appendChild(div);
-    box.scrollTop = box.scrollHeight;
+    messagesBox.appendChild(div);
+    messagesBox.scrollTop = messagesBox.scrollHeight;
 }
