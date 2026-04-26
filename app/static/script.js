@@ -12,6 +12,7 @@ function login() {
 
     ws.onopen = () => {
         ws.send(username);
+        loadDialogs(); // 🔥 ВАЖНО
     };
 
     ws.onmessage = (e) => {
@@ -23,11 +24,22 @@ function login() {
     document.getElementById("app").style.display = "flex";
 }
 
-function addUser() {
-    const name = prompt("Username:");
-    if (!name || users.includes(name)) return;
+// 📌 загрузка диалогов (ПОСЛЕ ПЕРЕЗАХОДА ВСЁ ВОССТАНАВЛИВАЕТСЯ)
+async function loadDialogs() {
+    const res = await fetch(`/dialogs/${username}`);
+    const data = await res.json();
 
-    users.push(name);
+    const box = document.getElementById("users");
+    box.innerHTML = "";
+
+    data.forEach(user => {
+        addUser(user);
+    });
+}
+
+// 📌 добавление пользователя в список
+function addUser(name) {
+    const box = document.getElementById("users");
 
     const div = document.createElement("div");
     div.className = "user";
@@ -36,28 +48,45 @@ function addUser() {
     div.onclick = () => {
         currentUser = name;
         document.getElementById("messages").innerHTML = "";
+
+        // 🔥 загрузка истории чата
+        ws.send("history|" + name);
     };
 
-    document.getElementById("users").appendChild(div);
+    box.appendChild(div);
 }
 
+// 📌 кнопка "+"
+function addUser() {
+    const name = prompt("Username:");
+    if (!name) return;
+
+    addUser(name);
+}
+
+// 📤 отправка сообщения
 function send() {
     const msg = document.getElementById("msgInput").value;
     if (!currentUser || !msg) return;
 
     ws.send(currentUser + "|" + msg);
 
-    addMessage(username, msg);
     document.getElementById("msgInput").value = "";
 }
 
+// 💬 вывод сообщений
 function addMessage(sender, msg) {
     const box = document.getElementById("messages");
 
     const div = document.createElement("div");
-    div.className = "msg " + (sender === username ? "me" : "other");
 
-    div.innerText = sender === username ? msg : sender + ": " + msg;
+    if (sender === username) {
+        div.style.textAlign = "right";
+        div.innerText = msg;
+    } else {
+        div.style.textAlign = "left";
+        div.innerText = sender + ": " + msg;
+    }
 
     box.appendChild(div);
     box.scrollTop = box.scrollHeight;
