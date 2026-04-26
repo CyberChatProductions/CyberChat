@@ -2,17 +2,6 @@
 <html>
 <head>
     <title>Messenger</title>
-    <style>
-        body { margin:0; font-family:Arial; display:flex; height:100vh; }
-        #left { width:250px; border-right:1px solid #ccc; padding:10px; }
-        #chat { flex:1; display:flex; flex-direction:column; }
-        #messages { flex:1; overflow:auto; padding:10px; }
-        #input { display:flex; }
-        input { flex:1; padding:10px; }
-        button { padding:10px; }
-        .user { cursor:pointer; padding:5px; }
-        .user:hover { background:#eee; }
-    </style>
 </head>
 <body>
 
@@ -22,25 +11,22 @@
     <button onclick="login()">Enter</button>
 </div>
 
-<div id="app" style="display:none; width:100%;">
-    
-    <div id="left">
-        <button onclick="addUser()">+ Add user</button>
-        <div id="users"></div>
-    </div>
+<div id="app" style="display:none;">
+    <h3>Chat</h3>
 
-    <div id="chat">
-        <div id="messages"></div>
+    <button onclick="addUser()">+ Add user</button>
+    <div id="users"></div>
 
-        <div id="input">
-            <input id="msgInput">
-            <button onclick="send()">Send</button>
-        </div>
-    </div>
+    <hr>
 
+    <div id="messages"></div>
+
+    <input id="msgInput">
+    <button onclick="send()">Send</button>
 </div>
 
-<script src="script.js"></script>
+<!-- 🔥 ВАЖНО: правильный путь -->
+<script src="/static/script.js"></script>
 
 </body>
 </html>
