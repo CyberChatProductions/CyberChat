@@ -1,26 +1,210 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <title>Messenger</title>
+<meta charset="UTF-8">
+<title>Messenger</title>
+
+<style>
+:root {
+    --bg: #0f0f10;
+    --panel: #1a1b1e;
+    --panel2: #22232a;
+    --text: #e6e6e6;
+    --accent: #4f7cff;
+    --me: #4f7cff;
+    --other: #2a2c34;
+}
+
+body.light {
+    --bg: #f5f6f8;
+    --panel: #ffffff;
+    --panel2: #f0f2f5;
+    --text: #111;
+    --accent: #4f7cff;
+    --me: #4f7cff;
+    --other: #e9ecf1;
+}
+
+* {
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+}
+
+/* LOGIN */
+#login {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.login-box {
+    background: var(--panel);
+    padding: 25px;
+    border-radius: 14px;
+    width: 300px;
+    text-align: center;
+}
+
+input {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    border: none;
+    border-radius: 8px;
+    background: var(--panel2);
+    color: var(--text);
+}
+
+button {
+    margin-top: 10px;
+    padding: 10px;
+    width: 100%;
+    border: none;
+    border-radius: 8px;
+    background: var(--accent);
+    color: white;
+    cursor: pointer;
+}
+
+/* APP */
+#app {
+    display: none;
+    height: 100vh;
+    display: flex;
+}
+
+/* SIDEBAR */
+#sidebar {
+    width: 280px;
+    background: var(--panel);
+    border-right: 1px solid #2c2c2c;
+    display: flex;
+    flex-direction: column;
+}
+
+#topbar {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+}
+
+.user {
+    padding: 10px;
+    margin: 5px;
+    border-radius: 10px;
+    cursor: pointer;
+    background: var(--panel2);
+}
+
+.user:hover {
+    background: var(--accent);
+}
+
+/* CHAT */
+#chat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+#messages {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+}
+
+.msg {
+    max-width: 60%;
+    padding: 10px;
+    margin: 6px;
+    border-radius: 12px;
+}
+
+.me {
+    background: var(--me);
+    margin-left: auto;
+    text-align: right;
+}
+
+.other {
+    background: var(--other);
+    margin-right: auto;
+}
+
+/* INPUT */
+#input {
+    display: flex;
+    padding: 10px;
+    border-top: 1px solid #333;
+}
+
+#input input {
+    flex: 1;
+    margin: 0;
+}
+
+#input button {
+    width: 100px;
+    margin-left: 10px;
+}
+</style>
+
 </head>
 <body>
 
+<!-- LOGIN -->
 <div id="login">
-    <h2>Login</h2>
-    <input id="nameInput" placeholder="Name">
-    <button onclick="login()">Enter</button>
+    <div class="login-box">
+        <h2>Welcome</h2>
+        <input id="nameInput" placeholder="Enter nickname">
+        <button onclick="login()">Start</button>
+    </div>
 </div>
 
-<div id="app" style="display:none;">
-    <div id="users"></div>
+<!-- APP -->
+<div id="app">
 
-    <div id="messages" style="height:300px; overflow:auto; border:1px solid #ccc;"></div>
+    <div id="sidebar">
+        <div id="topbar">
+            <b>Chats</b>
+            <button onclick="addUser()" style="width:40px;">+</button>
+            <button onclick="toggleTheme()" style="width:40px;">🌓</button>
+        </div>
 
-    <input id="msgInput" placeholder="message">
-    <button onclick="send()">Send</button>
+        <div id="users"></div>
+    </div>
+
+    <div id="chat">
+        <div id="messages"></div>
+
+        <div id="input">
+            <input id="msgInput" placeholder="Message...">
+            <button onclick="send()">Send</button>
+        </div>
+    </div>
+
 </div>
 
 <script src="/static/script.js"></script>
+
+<script>
+function toggleTheme() {
+    document.body.classList.toggle("light");
+    localStorage.setItem("theme", document.body.classList.contains("light") ? "light" : "dark");
+}
+
+if (localStorage.getItem("theme") === "light") {
+    document.body.classList.add("light");
+}
+</script>
 
 </body>
 </html>
