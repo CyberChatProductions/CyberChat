@@ -1,21 +1,61 @@
-const ws = new WebSocket(`wss://${location.host}/ws`);
+let ws;
+let username;
+let currentUser = null;
+let users = [];
 
-ws.onmessage = (event) => {
-    const chat = document.getElementById("chat");
+function login() {
+    username = document.getElementById("nameInput").value;
 
-    const li = document.createElement("li");
-    li.textContent = event.data;
+    if (!username) return;
 
-    chat.appendChild(li);
-};
+    ws = new WebSocket(`wss://${location.host}/ws`);
 
-function sendMessage() {
-    const username = document.getElementById("username").value;
-    const message = document.getElementById("message").value;
+    ws.onopen = () => {
+        ws.send(username); // регистрация
+    };
 
-    if (!username || !message) return;
+    ws.onmessage = (event) => {
+        const msg = document.getElementById("messages");
+        const div = document.createElement("div");
+        div.textContent = event.data;
+        msg.appendChild(div);
+    };
 
-    ws.send(username + ": " + message);
+    document.getElementById("login").style.display = "none";
+    document.getElementById("app").style.display = "flex";
+}
 
-    document.getElementById("message").value = "";
+function addUser() {
+    const name = prompt("Enter username");
+    if (!name || users.includes(name)) return;
+
+    users.push(name);
+    renderUsers();
+}
+
+function renderUsers() {
+    const box = document.getElementById("users");
+    box.innerHTML = "";
+
+    users.forEach(u => {
+        const div = document.createElement("div");
+        div.className = "user";
+        div.textContent = u;
+        div.onclick = () => currentUser = u;
+        box.appendChild(div);
+    });
+}
+
+function send() {
+    const msg = document.getElementById("msgInput").value;
+    if (!currentUser || !msg) return;
+
+    ws.send(currentUser + "|" + msg);
+
+    const messages = document.getElementById("messages");
+    const div = document.createElement("div");
+    div.textContent = "You → " + currentUser + ": " + msg;
+    messages.appendChild(div);
+
+    document.getElementById("msgInput").value = "";
 }
