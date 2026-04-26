@@ -13,6 +13,7 @@ function login() {
     ws = new WebSocket(`${protocol}://${location.host}/ws`);
 
     ws.onopen = () => {
+        console.log("WS OPEN");
         ws.send(username);
         loadUsers();
     };
@@ -21,6 +22,9 @@ function login() {
         const [sender, msg] = e.data.split("|");
         addMessage(sender, msg);
     };
+
+    ws.onerror = (e) => console.log("WS ERROR", e);
+    ws.onclose = () => console.log("WS CLOSED");
 
     document.getElementById("login").style.display = "none";
     document.getElementById("app").style.display = "flex";
@@ -37,11 +41,7 @@ async function loadUsers() {
         div.className = "user";
         div.innerText = u;
 
-        div.onclick = () => {
-            currentUser = u;
-            messagesBox.innerHTML = "";
-            ws.send("history|" + u);
-        };
+        div.onclick = () => openChat(u);
 
         usersBox.appendChild(div);
     });
@@ -55,18 +55,32 @@ function addUser() {
     div.className = "user";
     div.innerText = name;
 
-    div.onclick = () => {
-        currentUser = name;
-        messagesBox.innerHTML = "";
-        ws.send("history|" + name);
-    };
+    div.onclick = () => openChat(name);
 
     usersBox.appendChild(div);
 }
 
+function openChat(user) {
+    if (!ws || ws.readyState !== 1) {
+        console.log("WS NOT READY");
+        return;
+    }
+
+    currentUser = user;
+    messagesBox.innerHTML = "";
+
+    ws.send("history|" + user);
+}
+
 function send() {
     const msg = document.getElementById("msgInput").value;
+
     if (!currentUser || !msg) return;
+
+    if (!ws || ws.readyState !== 1) {
+        console.log("WS NOT READY");
+        return;
+    }
 
     ws.send(currentUser + "|" + msg);
     document.getElementById("msgInput").value = "";
