@@ -6,166 +6,145 @@
 
 <style>
 :root {
-    --bg: #0f0f10;
-    --panel: #1a1b1e;
-    --panel2: #22232a;
-    --text: #e6e6e6;
-    --accent: #4f7cff;
-    --me: #4f7cff;
-    --other: #2a2c34;
+    --bg:#0f0f10;
+    --panel:#1a1b1e;
+    --panel2:#22232a;
+    --text:#e6e6e6;
+    --me:#4f7cff;
+    --other:#2a2c34;
 }
 
 body.light {
-    --bg: #f5f6f8;
-    --panel: #ffffff;
-    --panel2: #f0f2f5;
-    --text: #111;
-    --accent: #4f7cff;
-    --me: #4f7cff;
-    --other: #e9ecf1;
-}
-
-* {
-    box-sizing: border-box;
-    font-family: Arial, sans-serif;
+    --bg:#f5f6f8;
+    --panel:#ffffff;
+    --panel2:#eceff3;
+    --text:#111;
+    --me:#4f7cff;
+    --other:#e5e8ef;
 }
 
 body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--text);
-    height: 100vh;
+    margin:0;
+    font-family:Arial;
+    background:var(--bg);
+    color:var(--text);
+    height:100vh;
 }
 
 /* LOGIN */
 #login {
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
 }
 
-.login-box {
-    background: var(--panel);
-    padding: 25px;
-    border-radius: 14px;
-    width: 300px;
-    text-align: center;
+.box {
+    background:var(--panel);
+    padding:20px;
+    border-radius:12px;
+    width:280px;
 }
 
-input {
-    width: 100%;
-    padding: 10px;
-    margin-top: 10px;
-    border: none;
-    border-radius: 8px;
-    background: var(--panel2);
-    color: var(--text);
+input, button {
+    width:100%;
+    padding:10px;
+    margin-top:10px;
+    border:none;
+    border-radius:8px;
 }
 
 button {
-    margin-top: 10px;
-    padding: 10px;
-    width: 100%;
-    border: none;
-    border-radius: 8px;
-    background: var(--accent);
-    color: white;
-    cursor: pointer;
+    background:#4f7cff;
+    color:white;
+    cursor:pointer;
 }
 
 /* APP */
 #app {
-    display: none;
-    height: 100vh;
-    display: flex;
+    display:none;
+    height:100vh;
+    display:flex;
 }
 
 /* SIDEBAR */
 #sidebar {
-    width: 280px;
-    background: var(--panel);
-    border-right: 1px solid #2c2c2c;
-    display: flex;
-    flex-direction: column;
+    width:260px;
+    background:var(--panel);
+    border-right:1px solid #333;
+    display:flex;
+    flex-direction:column;
 }
 
-#topbar {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px;
+#users {
+    flex:1;
+    overflow:auto;
 }
 
 .user {
-    padding: 10px;
-    margin: 5px;
-    border-radius: 10px;
-    cursor: pointer;
-    background: var(--panel2);
-}
-
-.user:hover {
-    background: var(--accent);
+    padding:10px;
+    margin:5px;
+    border-radius:8px;
+    background:var(--panel2);
+    cursor:pointer;
 }
 
 /* CHAT */
 #chat {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
+    flex:1;
+    display:flex;
+    flex-direction:column;
 }
 
 #messages {
-    flex: 1;
-    padding: 15px;
-    overflow-y: auto;
+    flex:1;
+    padding:10px;
+    overflow:auto;
 }
 
 .msg {
-    max-width: 60%;
-    padding: 10px;
-    margin: 6px;
-    border-radius: 12px;
+    padding:8px;
+    margin:5px;
+    border-radius:10px;
+    max-width:60%;
 }
 
 .me {
-    background: var(--me);
-    margin-left: auto;
-    text-align: right;
+    background:var(--me);
+    margin-left:auto;
+    text-align:right;
 }
 
 .other {
-    background: var(--other);
-    margin-right: auto;
+    background:var(--other);
 }
 
 /* INPUT */
 #input {
-    display: flex;
-    padding: 10px;
-    border-top: 1px solid #333;
+    display:flex;
+    padding:10px;
 }
 
 #input input {
-    flex: 1;
-    margin: 0;
+    flex:1;
+    margin:0;
 }
 
 #input button {
-    width: 100px;
-    margin-left: 10px;
+    width:100px;
+    margin-left:10px;
 }
 </style>
-
 </head>
+
 <body>
 
 <!-- LOGIN -->
 <div id="login">
-    <div class="login-box">
-        <h2>Welcome</h2>
-        <input id="nameInput" placeholder="Enter nickname">
-        <button onclick="login()">Start</button>
+    <div class="box">
+        <h3>Login</h3>
+        <input id="nameInput" placeholder="name">
+        <button onclick="login()">Enter</button>
     </div>
 </div>
 
@@ -173,20 +152,16 @@ button {
 <div id="app">
 
     <div id="sidebar">
-        <div id="topbar">
-            <b>Chats</b>
-            <button onclick="addUser()" style="width:40px;">+</button>
-            <button onclick="toggleTheme()" style="width:40px;">🌓</button>
-        </div>
-
+        <button onclick="addUser()">+ add</button>
         <div id="users"></div>
+        <button onclick="toggleTheme()">theme</button>
     </div>
 
     <div id="chat">
         <div id="messages"></div>
 
         <div id="input">
-            <input id="msgInput" placeholder="Message...">
+            <input id="msgInput">
             <button onclick="send()">Send</button>
         </div>
     </div>
@@ -196,13 +171,8 @@ button {
 <script src="/static/script.js"></script>
 
 <script>
-function toggleTheme() {
+function toggleTheme(){
     document.body.classList.toggle("light");
-    localStorage.setItem("theme", document.body.classList.contains("light") ? "light" : "dark");
-}
-
-if (localStorage.getItem("theme") === "light") {
-    document.body.classList.add("light");
 }
 </script>
 
