@@ -5,14 +5,11 @@ let users = [];
 
 function login() {
     username = document.getElementById("nameInput").value;
-
     if (!username) return;
 
     ws = new WebSocket(`wss://${location.host}/ws`);
 
-    ws.onopen = () => {
-        ws.send(username); // регистрация
-    };
+    ws.onopen = () => ws.send(username);
 
     ws.onmessage = (event) => {
         const msg = document.getElementById("messages");
@@ -41,9 +38,21 @@ function renderUsers() {
         const div = document.createElement("div");
         div.className = "user";
         div.textContent = u;
-        div.onclick = () => currentUser = u;
+
+        div.onclick = () => {
+            currentUser = u;
+            loadHistory(u);
+        };
+
         box.appendChild(div);
     });
+}
+
+function loadHistory(user) {
+    const messages = document.getElementById("messages");
+    messages.innerHTML = "";
+
+    ws.send("history|" + user);
 }
 
 function send() {
@@ -54,7 +63,7 @@ function send() {
 
     const messages = document.getElementById("messages");
     const div = document.createElement("div");
-    div.textContent = "You → " + currentUser + ": " + msg;
+    div.textContent = "You: " + msg;
     messages.appendChild(div);
 
     document.getElementById("msgInput").value = "";
