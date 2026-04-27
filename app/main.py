@@ -1,117 +1,102 @@
-import os
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-
-from app.db import engine, SessionLocal, Base
-from app.models import Message, User
+from fastapi.templating import Jinja2Templates
+from fastapi import Request
+from pydantic import BaseModel
+import sqlite3
 
 app = FastAPI()
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-STATIC_DIR = os.path.join(BASE_DIR, "static")
+templates = Jinja2Templates(directory="app/templates")
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+# ---------------- DB ----------------
+conn = sqlite3.connect("chat.db", check_same_thread=False)
+cur = conn.cursor()
 
-Base.metadata.create_all(bind=engine)
+cur.execute("""
+CREATE TABLE IF NOT EXISTS users (
+    username TEXT PRIMARY KEY,
+    password TEXT
+)
+""")
 
-connections = {}
+cur.execute("""
+CREATE TABLE IF NOT EXISTS messages (
+    sender TEXT,
+    receiver TEXT,
+    content TEXT
+)
+""")
 
-
-# ---------------- FRONT ----------------
-@app.get("/")
-def home():
-    return FileResponse(os.path.join(STATIC_DIR, "index.html"))
-
+conn.commit()
 
 # ---------------- AUTH ----------------
+class Auth(BaseModel):
+    username: str
+    password: str
+
+
 @app.post("/register")
-def register(data: dict):
-    db = SessionLocal()
-
-    u = data.get("username")
-    p = data.get("password")
-
-    if db.query(User).filter(User.username == u).first():
+def register(data: Auth):
+    try:
+        cur.execute("INSERT INTO users VALUES (?,?)", (data.username, data.password))
+        conn.commit()
+        return {"ok": True}
+    except:
         return {"ok": False}
-
-    db.add(User(username=u, password=p))
-    db.commit()
-
-    return {"ok": True}
 
 
 @app.post("/login")
-def login(data: dict):
-    db = SessionLocal()
-
-    u = data.get("username")
-    p = data.get("password")
-
-    user = db.query(User).filter(User.username == u).first()
-
-    if not user or user.password != p:
-        return {"ok": False}
-
-    return {"ok": True}
+def login(data: Auth):
+    cur.execute("SELECT * FROM users WHERE username=? AND password=?",
+                (data.username, data.password))
+    return {"ok": cur.fetchone() is not None}
 
 
 # ---------------- USERS ----------------
-@app.get("/users/{username}")
-def users(username: str):
-    db = SessionLocal()
-
-    msgs = db.query(Message).filter(
-        (Message.sender == username) | (Message.receiver == username)
-    ).all()
-
-    out = set()
-
-    for m in msgs:
-        if m.sender != username:
-            out.add(m.sender)
-        if m.receiver != username:
-            out.add(m.receiver)
-
-    return list(out)
+@app.get("/users/{me}")
+def users(me: str):
+    cur.execute("SELECT username FROM users WHERE username != ?", (me,))
+    return [x[0] for x in cur.fetchall()]
 
 
-@app.get("/history/{a}/{b}")
-def history(a: str, b: str):
-    db = SessionLocal()
+# ---------------- HISTORY ----------------
+@app.get("/history/{me}/{other}")
+def history(me: str, other: str):
+    cur.execute("""
+        SELECT sender, content FROM messages
+        WHERE (sender=? AND receiver=?)
+        OR (sender=? AND receiver=?)
+        ORDER BY rowid
+    """, (me, other, other, me))
 
-    msgs = db.query(Message).filter(
-        ((Message.sender == a) & (Message.receiver == b)) |
-        ((Message.sender == b) & (Message.receiver == a))
-    ).all()
-
-    return [{"sender": m.sender, "content": m.content} for m in msgs]
+    return [{"sender": r[0], "content": r[1]} for r in cur.fetchall()]
 
 
-# ---------------- WEBSOCKET ----------------
+# ---------------- WS ----------------
+connections = {}
+
 @app.websocket("/ws")
-async def ws(websocket: WebSocket):
-    await websocket.accept()
+async def ws(ws: WebSocket):
+    await ws.accept()
 
-    username = await websocket.receive_text()
-    connections[username] = websocket
-
-    db = SessionLocal()
+    user = await ws.receive_text()
+    connections[user] = ws
 
     try:
         while True:
-            data = await websocket.receive_text()
+            data = await ws.receive_text()
+            to, text = data.split("|", 1)
 
-            if "|" in data:
-                to, msg = data.split("|", 1)
+            # save
+            cur.execute("INSERT INTO messages VALUES (?,?,?)",
+                        (user, to, text))
+            conn.commit()
 
-                db.add(Message(sender=username, receiver=to, content=msg))
-                db.commit()
-
-                if to in connections:
-                    await connections[to].send_text(f"{username}|{msg}")
-
-                await websocket.send_text(f"{username}|{msg}")
+            # send to receiver
+            if to in connections:
+                await connections[to].send_text(f"{user}|{text}")
 
     except WebSocketDisconnect:
-        connections.pop(username, None)
+        connections.pop(user, None)
