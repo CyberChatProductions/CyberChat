@@ -6,12 +6,16 @@
 </head>
 <body>
 
-<div id="login">
-    <div class="loginBox">
-        <h2>CyberChat</h2>
-        <input id="nameInput" placeholder="Enter name">
-        <button onclick="login()">Enter</button>
-    </div>
+<div id="auth">
+    <h2>Login / Register</h2>
+
+    <input id="username" placeholder="login">
+    <input id="password" type="password" placeholder="password">
+
+    <button onclick="register()">Register</button>
+    <button onclick="login()">Login</button>
+
+    <p id="error"></p>
 </div>
 
 <div id="app">
