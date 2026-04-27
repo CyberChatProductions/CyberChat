@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
 from app.db import engine, SessionLocal, Base
-from app.models import Message, User
+from app.models import Message, User, Device
 
 app = FastAPI()
 
@@ -20,116 +20,155 @@ Base.metadata.create_all(bind=engine)
 connections = {}
 
 
-# ---------------- HTML ----------------
+# ---------------- FRONT ----------------
 @app.get("/")
 def home():
     return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
 
-# ---------------- REG ----------------
+# ---------------- AUTH ----------------
 def valid_username(name: str):
     return re.match(r"^[A-Za-zА-Яа-я0-9._/]+$", name)
 
 
 @app.post("/register")
 def register(data: dict):
-    try:
-        username = data.get("username")
-        password = data.get("password")
+    db = SessionLocal()
 
-        if not valid_username(username):
-            return {"ok": False, "error": "invalid_username"}
+    u = data.get("username")
+    p = data.get("password")
 
-        db: Session = SessionLocal()
+    if not valid_username(u):
+        return {"ok": False, "error": "invalid"}
 
-        exists = db.query(User).filter(User.username == username).first()
-        if exists:
-            return {"ok": False, "error": "username_taken"}
+    if db.query(User).filter(User.username == u).first():
+        return {"ok": False, "error": "taken"}
 
-        user = User(username=username, password=password)
-        db.add(user)
-        db.commit()
+    db.add(User(username=u, password=p))
+    db.commit()
 
-        return {"ok": True}
-
-    except Exception as e:
-        return {"ok": False, "error": "fatal_error"}
+    return {"ok": True}
 
 
-# ---------------- LOGIN ----------------
 @app.post("/login")
 def login(data: dict):
-    try:
-        username = data.get("username")
-        password = data.get("password")
+    db = SessionLocal()
 
-        db: Session = SessionLocal()
+    u = data.get("username")
+    p = data.get("password")
 
-        user = db.query(User).filter(User.username == username).first()
+    user = db.query(User).filter(User.username == u).first()
 
-        if not user:
-            return {"ok": False, "error": "no_user"}
+    if not user or user.password != p:
+        return {"ok": False}
 
-        if user.password != password:
-            return {"ok": False, "error": "bad_password"}
-
-        return {"ok": True}
-
-    except:
-        return {"ok": False, "error": "kubik_broke_it"}
+    return {"ok": True}
 
 
-# ---------------- USERS ----------------
+# ---------------- DEVICE SYSTEM ----------------
+@app.post("/auto_login")
+def auto_login(data: dict):
+    db = SessionLocal()
+
+    d = data.get("device_id")
+
+    dev = db.query(Device).filter(Device.device_id == d).first()
+
+    if not dev:
+        return {"ok": False}
+
+    return {"ok": True, "username": dev.username}
+
+
+@app.post("/bind_device")
+def bind_device(data: dict):
+    db = SessionLocal()
+
+    u = data.get("username")
+    d = data.get("device_id")
+    ua = data.get("ua")
+
+    exists = db.query(Device).filter(Device.device_id == d).first()
+
+    if not exists:
+        db.add(Device(username=u, device_id=d, user_agent=ua))
+        db.commit()
+
+    return {"ok": True}
+
+
+@app.get("/devices/{username}")
+def devices(username: str):
+    db = SessionLocal()
+
+    return db.query(Device).filter(Device.username == username).all()
+
+
+@app.post("/remove_device")
+def remove_device(data: dict):
+    db = SessionLocal()
+
+    d = data.get("device_id")
+    p = data.get("password")
+
+    dev = db.query(Device).filter(Device.device_id == d).first()
+    user = db.query(User).filter(User.username == dev.username).first()
+
+    if user.password != p:
+        return {"ok": False}
+
+    db.delete(dev)
+    db.commit()
+
+    return {"ok": True}
+
+
+# ---------------- USERS / CHAT ----------------
 @app.get("/users/{username}")
-def get_users(username: str):
-    db: Session = SessionLocal()
+def users(username: str):
+    db = SessionLocal()
 
     msgs = db.query(Message).filter(
         (Message.sender == username) | (Message.receiver == username)
     ).all()
 
-    users = set()
+    out = set()
+
     for m in msgs:
         if m.sender != username:
-            users.add(m.sender)
+            out.add(m.sender)
         if m.receiver != username:
-            users.add(m.receiver)
+            out.add(m.receiver)
 
-    return list(users)
+    return list(out)
 
 
-# ---------------- HISTORY ----------------
-@app.get("/history/{u1}/{u2}")
-def history(u1: str, u2: str):
-    db: Session = SessionLocal()
+@app.get("/history/{a}/{b}")
+def history(a: str, b: str):
+    db = SessionLocal()
 
     msgs = db.query(Message).filter(
-        ((Message.sender == u1) & (Message.receiver == u2)) |
-        ((Message.sender == u2) & (Message.receiver == u1))
+        ((Message.sender == a) & (Message.receiver == b)) |
+        ((Message.sender == b) & (Message.receiver == a))
     ).all()
 
     return [{"sender": m.sender, "content": m.content} for m in msgs]
 
 
-# ---------------- ADD CHAT ----------------
 @app.post("/add_user")
 def add_user(data: dict):
-    username = data.get("username")
-    target = data.get("target")
+    db = SessionLocal()
 
-    db: Session = SessionLocal()
+    u = data.get("username")
+    t = data.get("target")
 
     exists = db.query(Message).filter(
-        ((Message.sender == username) & (Message.receiver == target)) |
-        ((Message.sender == target) & (Message.receiver == username))
+        ((Message.sender == u) & (Message.receiver == t)) |
+        ((Message.sender == t) & (Message.receiver == u))
     ).first()
 
     if not exists:
-        db.add(Message(
-            sender=username,
-            receiver=target,
-            content="👋 chat started"
-        ))
+        db.add(Message(sender=u, receiver=t, content="👋 chat started"))
         db.commit()
 
     return {"ok": True}
@@ -143,7 +182,7 @@ async def ws(websocket: WebSocket):
     username = await websocket.receive_text()
     connections[username] = websocket
 
-    db: Session = SessionLocal()
+    db = SessionLocal()
 
     try:
         while True:
@@ -152,11 +191,7 @@ async def ws(websocket: WebSocket):
             if "|" in data:
                 to, msg = data.split("|", 1)
 
-                db.add(Message(
-                    sender=username,
-                    receiver=to,
-                    content=msg
-                ))
+                db.add(Message(sender=username, receiver=to, content=msg))
                 db.commit()
 
                 if to in connections:
