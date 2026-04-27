@@ -1,12 +1,10 @@
 import os
-import re
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy.orm import Session
 
 from app.db import engine, SessionLocal, Base
-from app.models import Message, User, Device
+from app.models import Message, User
 
 app = FastAPI()
 
@@ -27,10 +25,6 @@ def home():
 
 
 # ---------------- AUTH ----------------
-def valid_username(name: str):
-    return re.match(r"^[A-Za-zА-Яа-я0-9._/]+$", name)
-
-
 @app.post("/register")
 def register(data: dict):
     db = SessionLocal()
@@ -38,11 +32,8 @@ def register(data: dict):
     u = data.get("username")
     p = data.get("password")
 
-    if not valid_username(u):
-        return {"ok": False, "error": "invalid"}
-
     if db.query(User).filter(User.username == u).first():
-        return {"ok": False, "error": "taken"}
+        return {"ok": False}
 
     db.add(User(username=u, password=p))
     db.commit()
@@ -65,65 +56,7 @@ def login(data: dict):
     return {"ok": True}
 
 
-# ---------------- DEVICE SYSTEM ----------------
-@app.post("/auto_login")
-def auto_login(data: dict):
-    db = SessionLocal()
-
-    d = data.get("device_id")
-
-    dev = db.query(Device).filter(Device.device_id == d).first()
-
-    if not dev:
-        return {"ok": False}
-
-    return {"ok": True, "username": dev.username}
-
-
-@app.post("/bind_device")
-def bind_device(data: dict):
-    db = SessionLocal()
-
-    u = data.get("username")
-    d = data.get("device_id")
-    ua = data.get("ua")
-
-    exists = db.query(Device).filter(Device.device_id == d).first()
-
-    if not exists:
-        db.add(Device(username=u, device_id=d, user_agent=ua))
-        db.commit()
-
-    return {"ok": True}
-
-
-@app.get("/devices/{username}")
-def devices(username: str):
-    db = SessionLocal()
-
-    return db.query(Device).filter(Device.username == username).all()
-
-
-@app.post("/remove_device")
-def remove_device(data: dict):
-    db = SessionLocal()
-
-    d = data.get("device_id")
-    p = data.get("password")
-
-    dev = db.query(Device).filter(Device.device_id == d).first()
-    user = db.query(User).filter(User.username == dev.username).first()
-
-    if user.password != p:
-        return {"ok": False}
-
-    db.delete(dev)
-    db.commit()
-
-    return {"ok": True}
-
-
-# ---------------- USERS / CHAT ----------------
+# ---------------- USERS ----------------
 @app.get("/users/{username}")
 def users(username: str):
     db = SessionLocal()
@@ -155,26 +88,7 @@ def history(a: str, b: str):
     return [{"sender": m.sender, "content": m.content} for m in msgs]
 
 
-@app.post("/add_user")
-def add_user(data: dict):
-    db = SessionLocal()
-
-    u = data.get("username")
-    t = data.get("target")
-
-    exists = db.query(Message).filter(
-        ((Message.sender == u) & (Message.receiver == t)) |
-        ((Message.sender == t) & (Message.receiver == u))
-    ).first()
-
-    if not exists:
-        db.add(Message(sender=u, receiver=t, content="👋 chat started"))
-        db.commit()
-
-    return {"ok": True}
-
-
-# ---------------- WS ----------------
+# ---------------- WEBSOCKET ----------------
 @app.websocket("/ws")
 async def ws(websocket: WebSocket):
     await websocket.accept()
