@@ -17,12 +17,12 @@ function login() {
 
 function connectWS() {
     const protocol = location.protocol === "https:" ? "wss" : "ws";
+
     ws = new WebSocket(`${protocol}://${location.host}/ws`);
 
     ws.onopen = () => {
         console.log("WS OPEN");
         ws.send(username);
-        loadUsers();
     };
 
     ws.onmessage = (e) => {
@@ -30,49 +30,26 @@ function connectWS() {
         addMessage(sender, msg);
     };
 
-    ws.onclose = () => {
-        console.log("WS CLOSED → reconnect in 2s");
-        setTimeout(connectWS, 2000);
-    };
-
     ws.onerror = (e) => {
         console.log("WS ERROR", e);
-        ws.close();
+    };
+
+    ws.onclose = () => {
+        console.log("WS CLOSED");
     };
 }
 
 function safeSend(data) {
     if (!ws || ws.readyState !== WebSocket.OPEN) {
-        console.log("WS NOT READY:", ws?.readyState);
+        console.log("WS NOT READY");
         return false;
     }
     ws.send(data);
     return true;
 }
 
-async function loadUsers() {
-    try {
-        const res = await fetch("/users");
-        const data = await res.json();
-
-        usersBox.innerHTML = "";
-
-        data.forEach(u => {
-            const div = document.createElement("div");
-            div.className = "user";
-            div.innerText = u;
-
-            div.onclick = () => openChat(u);
-
-            usersBox.appendChild(div);
-        });
-    } catch (e) {
-        console.log("loadUsers error", e);
-    }
-}
-
 function addUser() {
-    const name = prompt("username:");
+    const name = prompt("Enter username:");
     if (!name) return;
 
     const div = document.createElement("div");
@@ -92,7 +69,7 @@ function openChat(user) {
 }
 
 function send() {
-    const msg = document.getElementById("msgInput").value;
+    const msg = document.getElementById("msgInput").value.trim();
 
     if (!currentUser || !msg) return;
 
@@ -107,7 +84,7 @@ function addMessage(sender, msg) {
     const div = document.createElement("div");
     div.className = "msg " + (sender === username ? "me" : "other");
 
-    div.innerText = sender === username ? msg : sender + ": " + msg;
+    div.innerText = msg;
 
     messagesBox.appendChild(div);
     messagesBox.scrollTop = messagesBox.scrollHeight;
