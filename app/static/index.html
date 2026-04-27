@@ -1,173 +1,130 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>CyberChat</title>
+    <title>CyberChat</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial;
+            background: #1e1e1e;
+            color: white;
+        }
 
-<style>
-:root {
-    --bg:#0f0f10;
-    --panel:#1a1b1e;
-    --panel2:#22232a;
-    --text:#e6e6e6;
-    --me:#4f7cff;
-    --other:#2a2c34;
-}
+        #login {
+            display: flex;
+            height: 100vh;
+            justify-content: center;
+            align-items: center;
+        }
 
-body.light {
-    --bg:#f5f6f8;
-    --panel:#fff;
-    --panel2:#e9ecf2;
-    --text:#111;
-    --me:#4f7cff;
-    --other:#dfe3ea;
-}
+        #app {
+            display: none;
+            height: 100vh;
+        }
 
-body {
-    margin:0;
-    font-family:Arial;
-    background:var(--bg);
-    color:var(--text);
-    height:100vh;
-}
+        #sidebar {
+            width: 250px;
+            background: #2a2a2a;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
 
-#login {
-    height:100vh;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-}
+        #users {
+            flex: 1;
+            overflow-y: auto;
+        }
 
-.box {
-    background:var(--panel);
-    padding:20px;
-    border-radius:12px;
-    width:280px;
-}
+        .user {
+            padding: 10px;
+            background: #333;
+            margin-bottom: 5px;
+            cursor: pointer;
+        }
 
-input, button {
-    width:100%;
-    padding:10px;
-    margin-top:10px;
-    border:none;
-    border-radius:8px;
-}
+        .user:hover {
+            background: #444;
+        }
 
-button {
-    background:#4f7cff;
-    color:white;
-    cursor:pointer;
-}
+        #chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
 
-#app {
-    display:none;
-    height:100vh;
-}
+        #messages {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+        }
 
-#sidebar {
-    width:260px;
-    background:var(--panel);
-    display:flex;
-    flex-direction:column;
-}
+        .msg {
+            margin: 5px 0;
+            max-width: 60%;
+            padding: 8px;
+            border-radius: 8px;
+        }
 
-#topbar {
-    display:flex;
-    justify-content:space-between;
-    padding:10px;
-}
+        .me {
+            background: #4caf50;
+            align-self: flex-end;
+        }
 
-#users {
-    flex:1;
-    overflow:auto;
-}
+        .other {
+            background: #555;
+            align-self: flex-start;
+        }
 
-.user {
-    margin:6px;
-    padding:10px;
-    background:var(--panel2);
-    border-radius:8px;
-    cursor:pointer;
-}
+        #inputBox {
+            display: flex;
+            padding: 10px;
+            background: #2a2a2a;
+        }
 
-#chat {
-    flex:1;
-    display:flex;
-    flex-direction:column;
-}
+        #inputBox input {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            outline: none;
+        }
 
-#messages {
-    flex:1;
-    overflow:auto;
-    padding:10px;
-}
-
-.msg {
-    margin:5px;
-    padding:8px;
-    border-radius:10px;
-    max-width:60%;
-}
-
-.me { background:var(--me); margin-left:auto; }
-.other { background:var(--other); }
-
-#input {
-    display:flex;
-    padding:10px;
-}
-
-#input input {
-    flex:1;
-    margin:0;
-}
-
-#input button {
-    width:100px;
-    margin-left:10px;
-}
-</style>
+        button {
+            padding: 10px;
+            cursor: pointer;
+        }
+    </style>
 </head>
-
 <body>
 
+<!-- LOGIN -->
 <div id="login">
-    <div class="box">
-        <h3>Login</h3>
-        <input id="nameInput" placeholder="username">
+    <div>
+        <h2>Enter your name</h2>
+        <input id="nameInput" placeholder="Name">
         <button onclick="login()">Enter</button>
     </div>
 </div>
 
+<!-- APP -->
 <div id="app">
-
+    <!-- SIDEBAR -->
     <div id="sidebar">
-        <div id="topbar">
-            <button onclick="addUser()">+ chat</button>
-            <button onclick="toggleTheme()">theme</button>
-        </div>
-
+        <button onclick="addUser()">+ Add user</button>
         <div id="users"></div>
     </div>
 
+    <!-- CHAT -->
     <div id="chat">
         <div id="messages"></div>
 
-        <div id="input">
-            <input id="msgInput" placeholder="message">
+        <div id="inputBox">
+            <input id="msgInput" placeholder="Message">
             <button onclick="send()">Send</button>
         </div>
     </div>
-
 </div>
 
 <script src="/static/script.js"></script>
-
-<script>
-function toggleTheme() {
-    document.body.classList.toggle("light");
-}
-</script>
 
 </body>
 </html>
