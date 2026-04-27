@@ -1,4 +1,3 @@
-
 let ws;
 let username = null;
 let currentChat = null;
@@ -10,43 +9,29 @@ const usersBox = document.getElementById("users");
 const messages = document.getElementById("messages");
 const msg = document.getElementById("msg");
 
+const chatName = document.getElementById("chatName");
+
 // ---------------- AUTH ----------------
 async function register() {
     const res = await fetch("/register", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-            username: u.value,
-            password: p.value
-        })
+        body: JSON.stringify({username: u.value, password: p.value})
     });
 
     const data = await res.json();
-
-    if (!data.ok) {
-        alert("register error");
-        return;
-    }
-
-    alert("registered");
+    alert(data.ok ? "registered" : "error");
 }
 
 async function login() {
     const res = await fetch("/login", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-            username: u.value,
-            password: p.value
-        })
+        body: JSON.stringify({username: u.value, password: p.value})
     });
 
     const data = await res.json();
-
-    if (!data.ok) {
-        alert("wrong login");
-        return;
-    }
+    if (!data.ok) return alert("login error");
 
     username = u.value;
 
@@ -57,35 +42,19 @@ async function login() {
     loadUsers();
 }
 
-// ---------------- WS (СТАБИЛЬНЫЙ) ----------------
+// ---------------- WS ----------------
 function connectWS() {
     const proto = location.protocol === "https:" ? "wss" : "ws";
-    const url = `${proto}://${location.host}/ws`;
+    ws = new WebSocket(`${proto}://${location.host}/ws`);
 
-    ws = new WebSocket(url);
+    ws.onopen = () => ws.send(username);
 
-    ws.onopen = () => {
-        console.log("WS connected");
-        ws.send(username);
-    };
-
-    ws.onerror = (e) => {
-        console.log("WS error", e);
-    };
-
-    ws.onclose = () => {
-        console.log("WS closed → reconnect");
-        setTimeout(connectWS, 2000);
-    };
+    ws.onclose = () => setTimeout(connectWS, 2000);
 
     ws.onmessage = (e) => {
-        const data = e.data;
+        const [from, text] = e.data.split("|");
 
-        if (!data.includes("|")) return;
-
-        const [from, text] = data.split("|");
-
-        if (currentChat && from === currentChat) {
+        if (currentChat === from) {
             addMsg(from, text);
         }
     };
@@ -109,9 +78,18 @@ async function loadUsers() {
     });
 }
 
+// ---------------- ADD USER ----------------
+document.getElementById("addUser").onclick = () => {
+    const name = prompt("username:");
+    if (!name) return;
+
+    openChat(name);
+};
+
 // ---------------- CHAT ----------------
 async function openChat(u) {
     currentChat = u;
+    chatName.innerText = u;
 
     messages.innerHTML = "";
 
@@ -133,13 +111,12 @@ function send() {
     msg.value = "";
 }
 
-// ---------------- UI MSG ----------------
+// ---------------- MSG UI ----------------
 function addMsg(sender, text) {
     const div = document.createElement("div");
     div.className = "msg " + (sender === username ? "me" : "other");
     div.innerText = text;
 
     messages.appendChild(div);
-
     messages.scrollTop = messages.scrollHeight;
 }
