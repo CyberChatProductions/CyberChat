@@ -1,23 +1,21 @@
 import os
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
+from fastapi.responses import FileResponse
 
 app = FastAPI()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-# если используешь шаблоны
-templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
+STATIC_DIR = os.path.join(BASE_DIR, "static")
 
 # статика
-app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
 # -------- ГЛАВНАЯ --------
 @app.get("/")
-def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+def home():
+    return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
 
 # -------- WEBSOCKET --------
@@ -43,9 +41,6 @@ async def websocket_endpoint(websocket: WebSocket):
                     await connections[to].send_text(f"{username}|{msg}")
 
                 await websocket.send_text(f"{username}|{msg}")
-
-            elif data.startswith("history|"):
-                await websocket.send_text("system|history")
 
     except WebSocketDisconnect:
         print("WS DISCONNECTED")
