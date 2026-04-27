@@ -16,16 +16,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ---------------- STATIC FRONTEND ----------------
+# ---------------- STATIC ----------------
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+# 👉 ВАЖНО: ТОЛЬКО ЭТОТ ROOT (никакого status ok)
 @app.get("/")
 def root():
     return FileResponse("static/index.html")
 
 # ---------------- DB ----------------
-DB_PATH = "chat.db"
-conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+conn = sqlite3.connect("chat.db", check_same_thread=False)
 cur = conn.cursor()
 
 cur.execute("""
@@ -90,7 +90,7 @@ def history(me: str, other: str):
 connections = {}
 
 @app.websocket("/ws")
-async def ws(websocket: WebSocket):
+async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
 
     user = await websocket.receive_text()
@@ -101,12 +101,14 @@ async def ws(websocket: WebSocket):
             data = await websocket.receive_text()
             to, text = data.split("|", 1)
 
+            # сохраняем
             cur.execute(
                 "INSERT INTO messages VALUES (?,?,?)",
                 (user, to, text)
             )
             conn.commit()
 
+            # отправляем онлайн
             if to in connections:
                 await connections[to].send_text(f"{user}|{text}")
 
