@@ -1,53 +1,37 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>CyberChat</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <title>Chat</title>
+    <style>
+        body { font-family: Arial; background:#111; color:white; }
+        #app { display:flex; height:90vh; }
+        #users { width:200px; border-right:1px solid #333; }
+        #chat { flex:1; display:flex; flex-direction:column; }
+        #messages { flex:1; overflow:auto; padding:10px; }
+        .me { text-align:right; color:lime; }
+        .other { text-align:left; color:white; }
+    </style>
 </head>
 <body>
 
-<!-- AUTH -->
 <div id="auth">
-    <h2>Login / Register</h2>
-
-    <input id="username" placeholder="login">
-    <input id="password" type="password" placeholder="password">
-
-    <button onclick="register()">Register</button>
-    <button onclick="login()">Login</button>
-
-    <p id="error"></p>
+    <input id="u" placeholder="login">
+    <input id="p" placeholder="password">
+    <button onclick="register()">register</button>
+    <button onclick="login()">login</button>
 </div>
 
-<!-- APP -->
-<div id="app">
-
-    <div id="sidebar">
-
-        <div id="users"></div>
-
-        <!-- floating + -->
-        <button id="addBtn" onclick="addUser()">+</button>
-    </div>
+<div id="app" style="display:none;">
+    <div id="users"></div>
 
     <div id="chat">
-
-        <!-- TOP BAR -->
-        <div id="chatHeader">
-            <span id="chatName">Select chat</span>
-        </div>
-
         <div id="messages"></div>
-
-        <div id="inputBox">
-            <input id="msgInput" placeholder="Message">
-            <button onclick="send()">Send</button>
-        </div>
-
+        <input id="msg">
+        <button onclick="send()">send</button>
     </div>
-
 </div>
 
 <script src="/static/script.js"></script>
+
 </body>
 </html>
