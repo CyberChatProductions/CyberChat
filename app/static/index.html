@@ -6,6 +6,7 @@
 </head>
 <body>
 
+<!-- AUTH -->
 <div id="auth">
     <h2>Login / Register</h2>
 
@@ -18,23 +19,35 @@
     <p id="error"></p>
 </div>
 
+<!-- APP -->
 <div id="app">
+
     <div id="sidebar">
-        <button onclick="addUser()">+ New chat</button>
+
         <div id="users"></div>
+
+        <!-- floating + -->
+        <button id="addBtn" onclick="addUser()">+</button>
     </div>
 
     <div id="chat">
+
+        <!-- TOP BAR -->
+        <div id="chatHeader">
+            <span id="chatName">Select chat</span>
+        </div>
+
         <div id="messages"></div>
 
         <div id="inputBox">
             <input id="msgInput" placeholder="Message">
             <button onclick="send()">Send</button>
         </div>
+
     </div>
+
 </div>
 
 <script src="/static/script.js"></script>
-
 </body>
 </html>
