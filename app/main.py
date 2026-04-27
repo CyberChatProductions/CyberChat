@@ -1,23 +1,26 @@
 import os
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
 app = FastAPI()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-STATIC_DIR = os.path.join(BASE_DIR, "static")
 
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+# если используешь шаблоны
+templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
+
+# статика
+app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 
 
-# -------- HTTP --------
+# -------- ГЛАВНАЯ --------
 @app.get("/")
-def home():
-    return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+def home(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
 
-# -------- WS --------
+# -------- WEBSOCKET --------
 connections = {}
 
 @app.websocket("/ws")
@@ -36,15 +39,15 @@ async def websocket_endpoint(websocket: WebSocket):
             if "|" in data:
                 to, msg = data.split("|", 1)
 
-                # отправка получателю
                 if to in connections:
                     await connections[to].send_text(f"{username}|{msg}")
 
-                # отправка себе
                 await websocket.send_text(f"{username}|{msg}")
+
+            elif data.startswith("history|"):
+                await websocket.send_text("system|history")
 
     except WebSocketDisconnect:
         print("WS DISCONNECTED")
-
         if username in connections:
             del connections[username]
