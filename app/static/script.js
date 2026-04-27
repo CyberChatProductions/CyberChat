@@ -1,15 +1,39 @@
 let ws;
 let username;
-let currentChat = null;
+let currentChat;
 
-// ---------------- AUTH ----------------
-function showError(text) {
-    document.getElementById("error").innerText = text;
+// ---------------- DEVICE ----------------
+function getDeviceId() {
+    let id = localStorage.getItem("device_id");
+
+    if (!id) {
+        id = crypto.randomUUID();
+        localStorage.setItem("device_id", id);
+    }
+
+    return id;
 }
 
+// ---------------- AUTO LOGIN ----------------
+async function autoLogin() {
+    const res = await fetch("/auto_login", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({device_id: getDeviceId()})
+    });
+
+    const data = await res.json();
+
+    if (data.ok) {
+        username = data.username;
+        enterApp();
+    }
+}
+
+// ---------------- AUTH ----------------
 async function register() {
-    const u = document.getElementById("username").value;
-    const p = document.getElementById("password").value;
+    const u = usernameInput.value;
+    const p = passwordInput.value;
 
     const res = await fetch("/register", {
         method: "POST",
@@ -19,17 +43,14 @@ async function register() {
 
     const data = await res.json();
 
-    if (!data.ok) {
-        showError("ошибка регистрации");
-        return;
-    }
+    if (!data.ok) return alert("register error");
 
-    showError("зарегистрировано");
+    alert("registered");
 }
 
 async function login() {
-    const u = document.getElementById("username").value;
-    const p = document.getElementById("password").value;
+    const u = usernameInput.value;
+    const p = passwordInput.value;
 
     const res = await fetch("/login", {
         method: "POST",
@@ -39,18 +60,33 @@ async function login() {
 
     const data = await res.json();
 
-    if (!data.ok) {
-        showError("неверный логин или пароль");
-        return;
-    }
+    if (!data.ok) return alert("bad login");
 
     username = u;
+    enterApp();
+}
 
+// ---------------- ENTER APP ----------------
+function enterApp() {
     document.getElementById("auth").style.display = "none";
     document.getElementById("app").style.display = "flex";
 
     connectWS();
     loadUsers();
+    bindDevice();
+}
+
+// ---------------- DEVICE BIND ----------------
+async function bindDevice() {
+    await fetch("/bind_device", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            username,
+            device_id: getDeviceId(),
+            ua: navigator.userAgent
+        })
+    });
 }
 
 // ---------------- WS ----------------
@@ -61,9 +97,7 @@ function connectWS() {
 
     ws = new WebSocket(url);
 
-    ws.onopen = () => {
-        ws.send(username);
-    };
+    ws.onopen = () => ws.send(username);
 
     ws.onmessage = (e) => {
         const [from, msg] = e.data.split("|");
@@ -79,54 +113,36 @@ async function loadUsers() {
     const res = await fetch(`/users/${username}`);
     const users = await res.json();
 
-    const box = document.getElementById("users");
-    box.innerHTML = "";
+    usersBox.innerHTML = "";
 
     users.forEach(u => {
         const div = document.createElement("div");
         div.className = "user";
         div.innerText = u;
-
         div.onclick = () => openChat(u);
-
-        box.appendChild(div);
-    });
-}
-
-// ---------------- ADD USER ----------------
-function addUser() {
-    const name = prompt("Enter username:");
-    if (!name) return;
-
-    fetch("/add_user", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({username, target: name})
-    }).then(() => {
-        loadUsers();
-        openChat(name);
+        usersBox.appendChild(div);
     });
 }
 
 // ---------------- CHAT ----------------
-async function openChat(user) {
-    currentChat = user;
+async function openChat(u) {
+    currentChat = u;
 
-    document.getElementById("chatName").innerText = user;
-    document.getElementById("messages").innerHTML = "";
+    chatName.innerText = u;
+    messages.innerHTML = "";
 
-    const res = await fetch(`/history/${username}/${user}`);
+    const res = await fetch(`/history/${username}/${u}`);
     const data = await res.json();
 
     data.forEach(m => addMsg(m.sender, m.content));
 }
 
 function send() {
-    const msg = document.getElementById("msgInput").value;
+    const msg = msgInput.value;
     if (!msg || !currentChat) return;
 
     ws.send(currentChat + "|" + msg);
-    document.getElementById("msgInput").value = "";
+    msgInput.value = "";
 }
 
 function addMsg(sender, msg) {
@@ -134,5 +150,5 @@ function addMsg(sender, msg) {
     div.className = "msg " + (sender === username ? "me" : "other");
     div.innerText = msg;
 
-    document.getElementById("messages").appendChild(div);
+    messages.appendChild(div);
 }
