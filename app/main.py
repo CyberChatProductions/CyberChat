@@ -1,5 +1,7 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import sqlite3
 
@@ -14,13 +16,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ---------------- ROOT (ВАЖНО) ----------------
+# ---------------- STATIC FRONTEND ----------------
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 @app.get("/")
 def root():
-    return {"status": "ok"}
+    return FileResponse("static/index.html")
 
-# ---------------- DB (Render-safe /tmp) ----------------
-DB_PATH = "/tmp/chat.db"
+# ---------------- DB ----------------
+DB_PATH = "chat.db"
 conn = sqlite3.connect(DB_PATH, check_same_thread=False)
 cur = conn.cursor()
 
@@ -64,7 +68,7 @@ def login(data: Auth):
     )
     return {"ok": cur.fetchone() is not None}
 
-# ---------------- USERS LIST ----------------
+# ---------------- USERS ----------------
 @app.get("/users/{me}")
 def users(me: str):
     cur.execute("SELECT username FROM users WHERE username != ?", (me,))
@@ -80,12 +84,9 @@ def history(me: str, other: str):
         ORDER BY rowid
     """, (me, other, other, me))
 
-    return [
-        {"sender": r[0], "content": r[1]}
-        for r in cur.fetchall()
-    ]
+    return [{"sender": r[0], "content": r[1]} for r in cur.fetchall()]
 
-# ---------------- WEBSOCKET ----------------
+# ---------------- WS ----------------
 connections = {}
 
 @app.websocket("/ws")
@@ -100,14 +101,12 @@ async def ws(websocket: WebSocket):
             data = await websocket.receive_text()
             to, text = data.split("|", 1)
 
-            # save
             cur.execute(
                 "INSERT INTO messages VALUES (?,?,?)",
                 (user, to, text)
             )
             conn.commit()
 
-            # send if online
             if to in connections:
                 await connections[to].send_text(f"{user}|{text}")
 
