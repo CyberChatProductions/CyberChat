@@ -5,43 +5,38 @@ body {
     color: #e6edf3;
 }
 
-/* login */
-#login {
-    display: flex;
+/* AUTH */
+#auth {
     height: 100vh;
+    display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
+    gap: 10px;
 }
 
-.loginBox {
-    padding: 20px;
+#auth input {
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
     background: #161b22;
-    border-radius: 12px;
+    color: white;
 }
 
-/* app */
+/* APP */
 #app {
     display: none;
     height: 100vh;
 }
 
-/* sidebar */
+/* SIDEBAR */
 #sidebar {
     width: 280px;
     background: #161b22;
+    border-right: 1px solid #30363d;
+    position: relative;
     display: flex;
     flex-direction: column;
-    border-right: 1px solid #30363d;
-}
-
-#sidebar button {
-    margin: 10px;
-    padding: 10px;
-    background: #238636;
-    border: none;
-    color: white;
-    border-radius: 8px;
-    cursor: pointer;
 }
 
 #users {
@@ -61,13 +56,40 @@ body {
     background: #30363d;
 }
 
-/* chat */
+/* + BUTTON */
+#addBtn {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: none;
+    font-size: 28px;
+    background: #238636;
+    color: white;
+    cursor: pointer;
+}
+
+/* CHAT */
 #chat {
     flex: 1;
     display: flex;
     flex-direction: column;
 }
 
+/* HEADER */
+#chatHeader {
+    height: 55px;
+    background: #161b22;
+    border-bottom: 1px solid #30363d;
+    display: flex;
+    align-items: center;
+    padding-left: 15px;
+    font-weight: bold;
+}
+
+/* MESSAGES */
 #messages {
     flex: 1;
     padding: 20px;
@@ -81,7 +103,6 @@ body {
     padding: 10px 14px;
     border-radius: 12px;
     max-width: 60%;
-    word-break: break-word;
 }
 
 .me {
@@ -94,7 +115,7 @@ body {
     background: #30363d;
 }
 
-/* input */
+/* INPUT */
 #inputBox {
     display: flex;
     padding: 10px;
@@ -105,8 +126,8 @@ body {
 #inputBox input {
     flex: 1;
     padding: 10px;
-    border: none;
     border-radius: 8px;
+    border: none;
     background: #21262d;
     color: white;
 }
