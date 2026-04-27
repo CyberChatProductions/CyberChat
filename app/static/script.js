@@ -1,6 +1,6 @@
-let ws = null;
-let username = null;
-let currentUser = null;
+let ws;
+let username;
+let currentUser;
 
 const usersBox = document.getElementById("users");
 const messagesBox = document.getElementById("messages");
@@ -13,6 +13,7 @@ function login() {
     document.getElementById("app").style.display = "flex";
 
     connectWS();
+    loadUsers();
 }
 
 function connectWS() {
@@ -21,7 +22,6 @@ function connectWS() {
     ws = new WebSocket(`${protocol}://${location.host}/ws`);
 
     ws.onopen = () => {
-        console.log("WS OPEN");
         ws.send(username);
     };
 
@@ -29,61 +29,51 @@ function connectWS() {
         const [sender, msg] = e.data.split("|");
         addMessage(sender, msg);
     };
-
-    ws.onerror = (e) => {
-        console.log("WS ERROR", e);
-    };
-
-    ws.onclose = () => {
-        console.log("WS CLOSED");
-    };
 }
 
-function safeSend(data) {
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
-        console.log("WS NOT READY");
-        return false;
-    }
-    ws.send(data);
-    return true;
+async function loadUsers() {
+    const res = await fetch(`/users/${username}`);
+    const users = await res.json();
+
+    usersBox.innerHTML = "";
+
+    users.forEach(u => {
+        const div = document.createElement("div");
+        div.className = "user";
+        div.innerText = u;
+        div.onclick = () => openChat(u);
+        usersBox.appendChild(div);
+    });
 }
 
 function addUser() {
-    const name = prompt("Enter username:");
+    const name = prompt("Username:");
     if (!name) return;
 
-    const div = document.createElement("div");
-    div.className = "user";
-    div.innerText = name;
-
-    div.onclick = () => openChat(name);
-
-    usersBox.appendChild(div);
+    openChat(name);
 }
 
-function openChat(user) {
+async function openChat(user) {
     currentUser = user;
     messagesBox.innerHTML = "";
 
-    safeSend("history|" + user);
+    const res = await fetch(`/history/${username}/${user}`);
+    const history = await res.json();
+
+    history.forEach(m => addMessage(m.sender, m.content));
 }
 
 function send() {
     const msg = document.getElementById("msgInput").value.trim();
+    if (!msg || !currentUser) return;
 
-    if (!currentUser || !msg) return;
-
-    const ok = safeSend(currentUser + "|" + msg);
-
-    if (ok) {
-        document.getElementById("msgInput").value = "";
-    }
+    ws.send(currentUser + "|" + msg);
+    document.getElementById("msgInput").value = "";
 }
 
 function addMessage(sender, msg) {
     const div = document.createElement("div");
     div.className = "msg " + (sender === username ? "me" : "other");
-
     div.innerText = msg;
 
     messagesBox.appendChild(div);
