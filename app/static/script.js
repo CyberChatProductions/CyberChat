@@ -1,12 +1,12 @@
 let ws;
 let username;
+let currentChat = null;
 
+// ---------------- AUTH ----------------
 function showError(text) {
     document.getElementById("error").innerText = text;
 }
 
-
-// ---------------- REGISTER ----------------
 async function register() {
     const u = document.getElementById("username").value;
     const p = document.getElementById("password").value;
@@ -20,21 +20,13 @@ async function register() {
     const data = await res.json();
 
     if (!data.ok) {
-        if (data.error === "username_taken") {
-            showError("логин уже используется");
-        } else if (data.error === "invalid_username") {
-            showError("недопустимые символы");
-        } else {
-            showError("произошла ошибка, обратитесь к Кубику т.к. он опять наломал дров");
-        }
+        showError("ошибка регистрации");
         return;
     }
 
     showError("зарегистрировано");
 }
 
-
-// ---------------- LOGIN ----------------
 async function login() {
     const u = document.getElementById("username").value;
     const p = document.getElementById("password").value;
@@ -48,13 +40,7 @@ async function login() {
     const data = await res.json();
 
     if (!data.ok) {
-        if (data.error === "no_user") {
-            showError("неверный логин или пароль");
-        } else if (data.error === "bad_password") {
-            showError("неверный логин или пароль");
-        } else {
-            showError("произошла ошибка, обратитесь к Кубику т.к. он опять наломал дров");
-        }
+        showError("неверный логин или пароль");
         return;
     }
 
@@ -64,4 +50,89 @@ async function login() {
     document.getElementById("app").style.display = "flex";
 
     connectWS();
+    loadUsers();
+}
+
+// ---------------- WS ----------------
+function connectWS() {
+    const url =
+        (location.protocol === "https:" ? "wss://" : "ws://")
+        + location.host + "/ws";
+
+    ws = new WebSocket(url);
+
+    ws.onopen = () => {
+        ws.send(username);
+    };
+
+    ws.onmessage = (e) => {
+        const [from, msg] = e.data.split("|");
+
+        if (from === currentChat) {
+            addMsg(from, msg);
+        }
+    };
+}
+
+// ---------------- USERS ----------------
+async function loadUsers() {
+    const res = await fetch(`/users/${username}`);
+    const users = await res.json();
+
+    const box = document.getElementById("users");
+    box.innerHTML = "";
+
+    users.forEach(u => {
+        const div = document.createElement("div");
+        div.className = "user";
+        div.innerText = u;
+
+        div.onclick = () => openChat(u);
+
+        box.appendChild(div);
+    });
+}
+
+// ---------------- ADD USER ----------------
+function addUser() {
+    const name = prompt("Enter username:");
+    if (!name) return;
+
+    fetch("/add_user", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({username, target: name})
+    }).then(() => {
+        loadUsers();
+        openChat(name);
+    });
+}
+
+// ---------------- CHAT ----------------
+async function openChat(user) {
+    currentChat = user;
+
+    document.getElementById("chatName").innerText = user;
+    document.getElementById("messages").innerHTML = "";
+
+    const res = await fetch(`/history/${username}/${user}`);
+    const data = await res.json();
+
+    data.forEach(m => addMsg(m.sender, m.content));
+}
+
+function send() {
+    const msg = document.getElementById("msgInput").value;
+    if (!msg || !currentChat) return;
+
+    ws.send(currentChat + "|" + msg);
+    document.getElementById("msgInput").value = "";
+}
+
+function addMsg(sender, msg) {
+    const div = document.createElement("div");
+    div.className = "msg " + (sender === username ? "me" : "other");
+    div.innerText = msg;
+
+    document.getElementById("messages").appendChild(div);
 }
