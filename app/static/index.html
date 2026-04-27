@@ -6,7 +6,7 @@
         body {
             margin: 0;
             font-family: Arial;
-            background: #1e1e1e;
+            background: #121212;
             color: white;
         }
 
@@ -23,9 +23,8 @@
         }
 
         #sidebar {
-            width: 250px;
-            background: #2a2a2a;
-            padding: 10px;
+            width: 260px;
+            background: #1e1e1e;
             display: flex;
             flex-direction: column;
         }
@@ -36,14 +35,13 @@
         }
 
         .user {
-            padding: 10px;
-            background: #333;
-            margin-bottom: 5px;
+            padding: 12px;
+            border-bottom: 1px solid #333;
             cursor: pointer;
         }
 
         .user:hover {
-            background: #444;
+            background: #333;
         }
 
         #chat {
@@ -54,66 +52,66 @@
 
         #messages {
             flex: 1;
-            padding: 10px;
+            padding: 15px;
             overflow-y: auto;
         }
 
         .msg {
-            margin: 5px 0;
+            margin: 6px 0;
+            padding: 10px;
+            border-radius: 10px;
             max-width: 60%;
-            padding: 8px;
-            border-radius: 8px;
         }
 
         .me {
             background: #4caf50;
-            align-self: flex-end;
+            margin-left: auto;
         }
 
         .other {
-            background: #555;
-            align-self: flex-start;
+            background: #333;
+            margin-right: auto;
         }
 
         #inputBox {
             display: flex;
             padding: 10px;
-            background: #2a2a2a;
+            background: #1e1e1e;
         }
 
         #inputBox input {
             flex: 1;
             padding: 10px;
+            background: #2a2a2a;
             border: none;
-            outline: none;
+            color: white;
         }
 
         button {
             padding: 10px;
+            background: #4caf50;
+            border: none;
+            color: white;
             cursor: pointer;
         }
     </style>
 </head>
 <body>
 
-<!-- LOGIN -->
 <div id="login">
     <div>
-        <h2>Enter your name</h2>
-        <input id="nameInput" placeholder="Name">
+        <h2>CyberChat</h2>
+        <input id="nameInput" placeholder="Enter name">
         <button onclick="login()">Enter</button>
     </div>
 </div>
 
-<!-- APP -->
 <div id="app">
-    <!-- SIDEBAR -->
     <div id="sidebar">
-        <button onclick="addUser()">+ Add user</button>
+        <button onclick="addUser()">+ Add</button>
         <div id="users"></div>
     </div>
 
-    <!-- CHAT -->
     <div id="chat">
         <div id="messages"></div>
 
