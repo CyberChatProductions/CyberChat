@@ -81,3 +81,41 @@ body {
     flex: 1;
     padding: 10px;
 }
+
+#addBtn {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    background: #2b7cff;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    font-size: 24px;
+}
+
+#settingsBtn {
+    cursor: pointer;
+}
+
+/* MODALS */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.6);
+    justify-content: center;
+    align-items: center;
+}
+
+.modalContent {
+    background: #1a1a1a;
+    padding: 20px;
+    border-radius: 10px;
+}
