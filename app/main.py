@@ -28,12 +28,13 @@ def home():
 def get_users(username: str):
     db: Session = SessionLocal()
 
-    messages = db.query(Message).filter(
+    msgs = db.query(Message).filter(
         (Message.sender == username) | (Message.receiver == username)
     ).all()
 
     users = set()
-    for m in messages:
+
+    for m in msgs:
         if m.sender != username:
             users.add(m.sender)
         if m.receiver != username:
@@ -42,23 +43,43 @@ def get_users(username: str):
     return list(users)
 
 
-@app.get("/history/{user1}/{user2}")
-def get_history(user1: str, user2: str):
+@app.get("/history/{u1}/{u2}")
+def history(u1: str, u2: str):
     db: Session = SessionLocal()
 
-    messages = db.query(Message).filter(
-        ((Message.sender == user1) & (Message.receiver == user2)) |
-        ((Message.sender == user2) & (Message.receiver == user1))
+    msgs = db.query(Message).filter(
+        ((Message.sender == u1) & (Message.receiver == u2)) |
+        ((Message.sender == u2) & (Message.receiver == u1))
     ).all()
 
-    return [
-        {"sender": m.sender, "content": m.content}
-        for m in messages
-    ]
+    return [{"sender": m.sender, "content": m.content} for m in msgs]
+
+
+@app.post("/add_user")
+def add_user(data: dict):
+    username = data.get("username")
+    target = data.get("target")
+
+    db: Session = SessionLocal()
+
+    exists = db.query(Message).filter(
+        ((Message.sender == username) & (Message.receiver == target)) |
+        ((Message.sender == target) & (Message.receiver == username))
+    ).first()
+
+    if not exists:
+        db.add(Message(
+            sender=username,
+            receiver=target,
+            content="👋 chat started"
+        ))
+        db.commit()
+
+    return {"ok": True}
 
 
 @app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
+async def ws_endpoint(websocket: WebSocket):
     await websocket.accept()
 
     username = await websocket.receive_text()
@@ -73,12 +94,11 @@ async def websocket_endpoint(websocket: WebSocket):
             if "|" in data:
                 to, msg = data.split("|", 1)
 
-                message = Message(
+                db.add(Message(
                     sender=username,
                     receiver=to,
                     content=msg
-                )
-                db.add(message)
+                ))
                 db.commit()
 
                 if to in connections:
@@ -87,6 +107,4 @@ async def websocket_endpoint(websocket: WebSocket):
                 await websocket.send_text(f"{username}|{msg}")
 
     except WebSocketDisconnect:
-        if username in connections:
-            del connections[username]
-        db.close()
+        connections.pop(username, None)
