@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
 
@@ -11,25 +11,18 @@ STATIC_DIR = os.path.join(BASE_DIR, "static")
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
-# =========================
-# HTTP
-# =========================
-
+# -------- HTTP --------
 @app.get("/")
 def home():
     return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
 
-# =========================
-# WEBSOCKET
-# =========================
-
+# -------- WS --------
 connections = {}
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
-
     print("WS CONNECTED")
 
     username = await websocket.receive_text()
@@ -38,7 +31,6 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             data = await websocket.receive_text()
-
             print("RECV:", data)
 
             if "|" in data:
@@ -50,10 +42,6 @@ async def websocket_endpoint(websocket: WebSocket):
 
                 # отправка себе
                 await websocket.send_text(f"{username}|{msg}")
-
-            elif data.startswith("history|"):
-                # пока просто тест
-                await websocket.send_text("system|history loaded")
 
     except WebSocketDisconnect:
         print("WS DISCONNECTED")
