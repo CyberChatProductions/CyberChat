@@ -8,26 +8,32 @@
 
 <body>
 
+<!-- AUTH -->
 <div id="auth">
     <h2>CyberChat</h2>
     <input id="u" placeholder="login">
     <input id="p" placeholder="password" type="password">
-
     <button onclick="login()">Login</button>
     <button onclick="register()">Register</button>
 </div>
 
+<!-- APP -->
 <div id="app" style="display:none">
 
+    <!-- SIDEBAR -->
     <div id="sidebar">
         <h3>Users</h3>
         <div id="users"></div>
+
+        <!-- ADD BUTTON -->
+        <div id="addBtn" onclick="openAdd()">+</div>
     </div>
 
+    <!-- CHAT -->
     <div id="chat">
-
         <div id="chatHeader">
             <span id="chatName">Select user</span>
+            <div id="settingsBtn" onclick="openSettings()">⚙</div>
         </div>
 
         <div id="messages"></div>
@@ -36,9 +42,27 @@
             <input id="msg" placeholder="message">
             <button onclick="send()">Send</button>
         </div>
-
     </div>
 
+</div>
+
+<!-- ADD USER MODAL -->
+<div id="addModal" class="modal">
+    <div class="modalContent">
+        <h3>Add user</h3>
+        <input id="newUser" placeholder="username">
+        <button onclick="addUser()">Add</button>
+        <button onclick="closeAdd()">Close</button>
+    </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div id="settingsModal" class="modal">
+    <div class="modalContent">
+        <h3>Settings</h3>
+        <button onclick="logout()">Logout</button>
+        <button onclick="closeSettings()">Close</button>
+    </div>
 </div>
 
 <script src="/static/script.js"></script>
